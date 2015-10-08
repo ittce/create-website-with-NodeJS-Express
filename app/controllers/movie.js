@@ -1,5 +1,6 @@
 var Movie = require('../models/movie');
 var Comment = require('../models/comment');
+var Category = require('../models/category');
 var _ = require('underscore');
 
 //detail page
@@ -11,7 +12,8 @@ exports.detail = function (req, res) {
       console.log(err);
     }
 
-    Comment.find({movie: id})
+    Comment
+      .find({movie: id})
       .populate('from', 'name')
       .populate('reply.from reply.to', 'name')
       .exec(function (err, comments) {
@@ -41,18 +43,12 @@ exports.list = function (req, res) {
 
 //admin new page
 exports.new = function (req, res) {
-  res.render('admin', {
-    title: 'imooc admin page',
-    movie: {
-      title: '',
-      doctor: '',
-      country: '',
-      language: '',
-      poster: '',
-      flash: '',
-      year: '',
-      summary: ''
-    }
+  Category.fetch(function (err, categories){
+    res.render('admin', {
+      title: 'imooc admin page',
+      categories: categories,
+      movie: {}
+    });
   });
 };
 
@@ -62,7 +58,6 @@ exports.save = function (req, res) {
   var movieObj = req.body.movie;
   var _movie;
 
-  console.log(typeof(id), id);
   if (typeof(id) !== 'undefined') {
     Movie.findById(id, function (err, movie) {
       if (err) {
@@ -79,23 +74,22 @@ exports.save = function (req, res) {
       });
     });
   } else {
-    _movie = new Movie({
-      doctor: movieObj.doctor,
-      title: movieObj.title,
-      country: movieObj.country,
-      language: movieObj.language,
-      year: movieObj.year,
-      poster: movieObj.poster,
-      summary: movieObj.summary,
-      flash: movieObj.flash
-    });
+    _movie = new Movie(movieObj);
 
+    var categoryId = movieObj.category;
     _movie.save(function (err, movie) {
       if (err) {
         console.log(err);
       }
-
-      res.redirect('/movie/' + movie._id);
+      Category.findById(categoryId, function (err, category) {
+        if (err) {
+          console.log(err);
+        }
+        category.movies.push(movie._id);
+        category.save(function(err, category){
+          res.redirect('/movie/' + movie._id);
+        });
+      });
     });
   }
 };
@@ -106,9 +100,12 @@ exports.update =  function (req, res) {
 
   if (id) {
     Movie.findById(id, function (err, movie) {
-      res.render('admin', {
-        title: '后台更新页',
-        movie: movie
+      Category.find({}, function (err, categories){
+        res.render('admin', {
+          title: '后台更新页',
+          movie: movie,
+          categories: categories
+        });
       });
     });
   }
