@@ -1,0 +1,29 @@
+extends ../layout
+block content
+  .container(style="padding-bottom:100px")
+    .row
+      .panel.panel-primary
+        .panel-heading
+          h3 #{keyword}
+        .panel-body
+          if results && results.length > 0
+            each item in results
+              .col-md-2
+                .thumbnail
+                  a(href="/movie/#{item._id}")
+                    img(src="#{item.poster}", alt="#{item.title}")
+                  .caption
+                    h3 #{item.title}
+                    p: a.btn.btn-primary(href="/movie/#{item._id}", role="button") 观看预告片
+          else
+            .col-md-12 '没有更多数据了'
+      ul.pagination
+        - for (var i = 0; i < totalPage; i++) {
+          - if (currentPage == (i + 1)) {
+            li.active
+              span #{currentPage}
+          - } else {
+            li
+              a(href='/results?p=#{i}&#{query}') #{i + 1}
+          - }
+        - }
